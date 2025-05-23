@@ -1,4 +1,4 @@
-Package: data_package
+Package: datapackage
 Title: Store Test Data for Quarto-WebR Usage
 Version: 0.0.1
 Authors@R: c(

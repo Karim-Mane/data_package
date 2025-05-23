@@ -1,13 +1,19 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file. -->
+
 <!-- The code to render this README is stored in .github/workflows/render-readme.yaml -->
+
 <!-- Variables marked with double curly braces will be transformed beforehand: -->
+
 <!-- - `packagename` is extracted from the DESCRIPTION file -->
+
 <!-- - `gh_repo` is extracted via a special environment variable in GitHub Actions -->
+
 <!-- Having these variables allow us to re-use this the same README template across repos -->
+
 <!-- without ever hardcoding repo-specific elements. -->
 
-# packagetemplate <img src="man/figures/logo.svg" align="right" width="120" alt="" />
+# datapackage <img src="man/figures/logo.svg" align="right" width="120" alt="" />
 
 <!-- badges: start -->
 
@@ -19,17 +25,17 @@ coverage](https://codecov.io/gh/Karim-Mane/data_package/branch/main/graph/badge.
 [![lifecycle-concept](https://raw.githubusercontent.com/reconverse/reconverse.github.io/master/images/badge-concept.svg)](https://www.reconverse.org/lifecycle.html#concept)
 <!-- badges: end -->
 
-packagetemplate provides functions to ….
+datapackage provides functions to ….
 
 <!-- This sentence is optional and can be removed -->
 
-packagetemplate is developed at the [CENTER\|similar](url) at the
+datapackage is developed at the [CENTER\|similar](url) at the
 [UNIVERSITY\|similar](url) as part of the [Epiverse-TRACE
 program](https://data.org/initiatives/epiverse/).
 
 ## Installation
 
-You can install the development version of packagetemplate from
+You can install the development version of datapackage from
 [GitHub](https://github.com/) with:
 
 ``` r
@@ -62,7 +68,7 @@ languages, but also differs from them in the following aspects:
 
 ### Code of Conduct
 
-Please note that the packagetemplate project is released with a
-[Contributor Code of
+Please note that the datapackage project is released with a [Contributor
+Code of
 Conduct](https://github.com/epiverse-trace/.github/blob/main/CODE_OF_CONDUCT.md).
 By contributing to this project, you agree to abide by its terms.

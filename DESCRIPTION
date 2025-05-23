@@ -1,5 +1,5 @@
-Package: packagetemplate
-Title: Your Package Title in Titlecase
+Package: data_package
+Title: Store Test Data for Quarto-WebR Usage
 Version: 0.0.1
 Authors@R: c(
     person("James M.", "Azam", , "james.azam@lshtm.ac.uk", role = "aut",
@@ -29,6 +29,7 @@ License: MIT + file LICENSE
 Depends:
     R (>= 4.0.0)
 Suggests:
+    cleanepi,
     knitr,
     rmarkdown,
     spelling,

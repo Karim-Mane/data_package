@@ -1,0 +1,22 @@
+---
+title: "create_showcase_data"
+author: "Karim"
+format: html
+---
+
+
+## Data import
+
+```{r}
+data <- readRDS(system.file("extdata", "test_df.RDS", package = "cleanepi"))
+```
+
+## Scan data
+
+```{r}
+scan_result <- cleanepi::scan_data(data = data)
+# saveRDS(
+#   scan_result,
+#   file = file.path(getwd(), "inst", "extdata", "scan_result.RDS")
+# )
+```

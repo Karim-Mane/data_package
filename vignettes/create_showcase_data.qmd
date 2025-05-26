@@ -4,23 +4,9 @@ author: "Karim"
 format: html
 ---
 
-
-## Data import
-
-```{r}
-data <- readRDS(system.file("extdata", "test_df.RDS", package = "cleanepi"))
-```
-
-## Scan data
+## Render readme
 
 ```{r}
-scan_result <- cleanepi::scan_data(data = data)
-# saveRDS(
-#   scan_result,
-#   file = file.path(getwd(), "inst", "extdata", "scan_result.RDS")
-# )
-
-
 # pak::pak(c("any::rmarkdown", "any::usethis", "."))
 # writeLines(
 #   knitr::knit_expand(
@@ -38,29 +24,67 @@ scan_result <- cleanepi::scan_data(data = data)
 # unlink("README_expanded.Rmd")
 ```
 
-## Replace missing values with NA
+## Test data creation process
+
+### data import
 
 ```{r}
-use_na_dat <- cleanepi::replace_missing_values(
+# data import
+data <- readRDS(system.file("extdata", "test_df.RDS", package = "cleanepi"))
+head(data)
+```
+
+### scanning through the data
+
+```{r}
+# scanning through the data
+scan_result <- cleanepi::scan_data(data = data)
+print(scan_result)
+saveRDS(
+  scan_result,
+  file = file.path(dirname(getwd()), "inst", "extdata", "scan_result.RDS")
+)
+```
+
+### replace missing values with NA
+
+```{r}
+# replace missing values with NA
+cleaned_data <- cleanepi::replace_missing_values(
   data = data,
   na_strings = "-99"
 )
-
-# saveRDS(
-#   use_na_dat,
-#   file = file.path(getwd(), "inst", "extdata", "use_na_result.RDS")
-# )
-```
-
-## Column names standardisation
-
-```{r}
-cleaned_data <- cleanepi::standardize_column_names(
-  data = data
-)
-
 saveRDS(
   cleaned_data,
-  file = file.path(getwd(), "inst", "extdata", "col_names_standardised.RDS")
+  file = file.path(dirname(getwd()), "inst", "extdata", "use_na_result.RDS")
+)
+```
+
+### column names standardisation
+
+```{r}
+# KEEP 'date.of.admission' AS IS
+test_data <- cleanepi::standardize_column_names(
+  data = data,
+  keep = "date.of.admission"
+)
+print(colnames(test_data))
+
+# KEEP 'date.of.admission' AS IS, BUT RENAME 'dateOfBirth' AND 'sex' TO
+# 'DOB' AND 'gender' RESPECTIVELY
+test_data <- cleanepi::standardize_column_names(
+  data = data,
+  keep = "date.of.admission",
+  rename = c(DOB = "dateOfBirth", gender = "sex")
+)
+print(colnames(test_data))
+
+# default column names standardisation
+cleaned_data <- cleanepi::standardize_column_names(
+  data = cleaned_data
+)
+saveRDS(
+  cleaned_data,
+  file = file.path(dirname(getwd()), "inst", "extdata", "col_names_standardised.RDS")
 )
 ```

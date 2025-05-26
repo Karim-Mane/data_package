@@ -104,3 +104,31 @@ saveRDS(
   file = file.path(dirname(getwd()), "inst", "extdata", "constant_dat.RDS")
 )
 ```
+
+## Date standardisation
+
+```{r}
+local_data <- cleaned_data
+# STANDARDIZE VALUES IN THE 'date_first_pcr_positive_test' COLUMN
+cleaned_data <- cleanepi::standardize_dates(
+  data = local_data,
+  target_columns = "date_first_pcr_positive_test",
+  format = NULL,
+  timeframe = NULL,
+  error_tolerance = 0.4,
+  orders = list(
+    world_named_months = c("Ybd", "dby"),
+    world_digit_months = c("dmy", "Ymd"),
+    US_formats = c("Omdy", "YOmd")
+  )
+)
+
+# detect and standardise all date columns
+cleaned_data <- cleanepi::standardize_dates(
+  data = local_data
+)
+saveRDS(
+  cleaned_data,
+  file = file.path(dirname(getwd()), "inst", "extdata", "date_standardised_dat.RDS")
+)
+```

@@ -37,3 +37,17 @@ scan_result <- cleanepi::scan_data(data = data)
 # )
 # unlink("README_expanded.Rmd")
 ```
+
+## Replace missing values with NA
+
+```{r}
+use_na_dat <- cleanepi::replace_missing_values(
+  data = data,
+  na_strings = "-99"
+)
+
+# saveRDS(
+#   use_na_dat,
+#   file = file.path(getwd(), "inst", "extdata", "use_na_result.RDS")
+# )
+```

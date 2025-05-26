@@ -51,3 +51,16 @@ use_na_dat <- cleanepi::replace_missing_values(
 #   file = file.path(getwd(), "inst", "extdata", "use_na_result.RDS")
 # )
 ```
+
+## Column names standardisation
+
+```{r}
+cleaned_data <- cleanepi::standardize_column_names(
+  data = data
+)
+
+saveRDS(
+  cleaned_data,
+  file = file.path(getwd(), "inst", "extdata", "col_names_standardised.RDS")
+)
+```

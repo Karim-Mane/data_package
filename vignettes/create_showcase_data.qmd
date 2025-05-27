@@ -32,12 +32,12 @@ format: html
 # simulated data creation
 set.seed(123)
 local_data <- simulist::sim_linelist() |>
-  simulist::messy_linelist()
+  simulist::messy_linelist(inconsistent_dates = TRUE)
 head(local_data)
-saveRDS(
-  local_data,
-  file = file.path(dirname(getwd()), "inst", "extdata", "messy_data.RDS")
-)
+# saveRDS(
+#   local_data,
+#   file = file.path(dirname(getwd()), "inst", "extdata", "messy_data.RDS")
+# )
 ```
 
 ### scanning through the data
@@ -46,10 +46,6 @@ saveRDS(
 # scanning through the data
 scan_result <- cleanepi::scan_data(data = local_data)
 print(scan_result)
-saveRDS(
-  scan_result,
-  file = file.path(dirname(getwd()), "inst", "extdata", "scan_result.RDS")
-)
 ```
 
 ### column names standardisation
@@ -68,10 +64,10 @@ print(colnames(cleaned_data))
 cleaned_data <- cleanepi::standardize_column_names(
   data = local_data
 )
-saveRDS(
-  cleaned_data,
-  file = file.path(dirname(getwd()), "inst", "extdata", "col_names_standardised.RDS")
-)
+# saveRDS(
+#   cleaned_data,
+#   file = file.path(dirname(getwd()), "inst", "extdata", "col_names_standardised.RDS")
+# )
 ```
 
 ### replace missing values with NA
@@ -90,10 +86,10 @@ cleaned_data <- cleanepi::replace_missing_values(
   data = local_data,
   na_strings = "-99"
 )
-saveRDS(
-  cleaned_data,
-  file = file.path(dirname(getwd()), "inst", "extdata", "use_na_result.RDS")
-)
+# saveRDS(
+#   cleaned_data,
+#   file = file.path(dirname(getwd()), "inst", "extdata", "use_na_result.RDS")
+# )
 ```
 
 ## Constant data removal
@@ -105,10 +101,10 @@ cleaned_data <- cleanepi::remove_constants(
   data = local_data,
   cutoff = 1
 )
-saveRDS(
-  cleaned_data,
-  file = file.path(dirname(getwd()), "inst", "extdata", "constant_dat.RDS")
-)
+# saveRDS(
+#   cleaned_data,
+#   file = file.path(dirname(getwd()), "inst", "extdata", "constant_dat.RDS")
+# )
 ```
 
 ## Date standardisation
@@ -133,10 +129,37 @@ cleaned_data <- cleanepi::standardize_dates(
 cleaned_data <- cleanepi::standardize_dates(
   data = local_data
 )
-saveRDS(
-  cleaned_data,
-  file = file.path(dirname(getwd()), "inst", "extdata", "date_standardised_dat.RDS")
+# saveRDS(
+#   cleaned_data,
+#   file = file.path(dirname(getwd()), "inst", "extdata", "date_standardised_dat.RDS")
+# )
+```
+
+## Check the sequence of date events
+
+```{r}
+local_data <- cleaned_data
+cleaned_data <- cleanepi::check_date_sequence(
+  data = local_data,
+  target_columns = c("date_first_contact", "date_last_contact")
 )
+```
+
+## Dictionary-based data substituting
+
+```{r}
+# create the data dictionary
+dictionary <- data.frame(
+  options = c("f", "F", "female", "m", "male", "Male"),
+  values = c(rep("female", 3), rep("male", 3)),
+  grp = rep("sex", 6),
+  orders = 1:6
+)
+
+# saveRDS(
+#   dictionary,
+#   file = file.path(dirname(getwd()), "inst", "extdata", "data_dictionary.RDS")
+# )
 ```
 
 ## Subject IDs standardisation
@@ -156,4 +179,33 @@ saveRDS(
   cleaned_data,
   file = file.path(dirname(getwd()), "inst", "extdata", "ids_standardised_dat.RDS")
 )
+```
+
+
+```{r}
+local_data <-  readRDS(
+  system.file("extdata", "messy_data.RDS", package = "cleanepi")
+)
+# STANDARDIZE VALUES IN THE 'date_first_pcr_positive_test' COLUMN
+cleaned_data <- cleanepi::standardize_dates(
+  data = local_data,
+  target_columns = "date_first_pcr_positive_test",
+  format = NULL,
+  timeframe = NULL,
+  error_tolerance = 0.4,
+  orders = list(
+    world_named_months = c("Ybd", "dby"),
+    world_digit_months = c("dmy", "Ymd"),
+    US_formats = c("Omdy", "YOmd")
+  )
+)
+
+# detect and standardise all date columns
+cleaned_data <- cleanepi::standardize_dates(
+  data = local_data
+)
+# saveRDS(
+#   cleaned_data,
+#   file = file.path(dirname(getwd()), "inst", "extdata", "date_standardised_dat.RDS")
+# )
 ```

@@ -26,12 +26,18 @@ format: html
 
 ## Test data creation process
 
-### data import
+### create simulated data
 
 ```{r}
-# data import
-local_data <- readRDS(system.file("extdata", "test_df.RDS", package = "cleanepi"))
+# simulated data creation
+set.seed(123)
+local_data <- simulist::sim_linelist() |>
+  simulist::messy_linelist()
 head(local_data)
+saveRDS(
+  local_data,
+  file = file.path(dirname(getwd()), "inst", "extdata", "messy_data.RDS")
+)
 ```
 
 ### scanning through the data

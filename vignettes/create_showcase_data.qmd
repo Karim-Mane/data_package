@@ -132,3 +132,22 @@ saveRDS(
   file = file.path(dirname(getwd()), "inst", "extdata", "date_standardised_dat.RDS")
 )
 ```
+
+## Subject IDs standardisation
+
+```{r}
+local_data <- cleaned_data
+# STANDARDIZE VALUES IN THE 'date_first_pcr_positive_test' COLUMN
+cleaned_data <- cleanepi::check_subject_ids(
+  data = local_data,
+  target_columns = "study_id",
+  prefix = "PS",
+  suffix = "P2",
+  range = c(1, 100),
+  nchar = 7
+)
+saveRDS(
+  cleaned_data,
+  file = file.path(dirname(getwd()), "inst", "extdata", "ids_standardised_dat.RDS")
+)
+```

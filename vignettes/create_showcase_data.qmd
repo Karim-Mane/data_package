@@ -4,18 +4,15 @@ author: "Karim"
 format: html
 ---
 
+## Run the codes below to familiarise yourself with cleanepi functionalities
+
 ### create simulated data
 
 ```{r}
 # simulated data creation
-set.seed(123)
+set.seed(1)
 local_data <- simulist::sim_linelist() |>
   simulist::messy_linelist(inconsistent_dates = TRUE)
-head(local_data)
-# saveRDS(
-#   local_data,
-#   file = file.path(dirname(getwd()), "inst", "extdata", "messy_data.RDS")
-# )
 ```
 
 ### scan through the data
@@ -29,6 +26,11 @@ print(scan_result)
 ### column names standardisation
 
 ```{r}
+# DEFAULT COLUMN NAMES STANDARDISATION
+cleaned_data <- cleanepi::standardize_column_names(
+  data = local_data
+)
+
 # KEEP 'date_admission' AS IS, BUT RENAME 'id' AND 'sex' TO
 # 'case_id' AND 'gender' RESPECTIVELY
 cleaned_data <- cleanepi::standardize_column_names(
@@ -37,40 +39,26 @@ cleaned_data <- cleanepi::standardize_column_names(
   rename = c(case_id = "id", gender = "sex")
 )
 print(colnames(cleaned_data))
-
-# default column names standardisation
-cleaned_data <- cleanepi::standardize_column_names(
-  data = local_data
-)
-# saveRDS(
-#   cleaned_data,
-#   file = file.path(dirname(getwd()), "inst", "extdata", "col_names_standardised.RDS")
-# )
 ```
 
 ### replace missing values with NA
 
 ```{r}
-local_data <- cleaned_data
-# replace missing values with NA in 'sex' column
-cleaned_data <- cleanepi::replace_missing_values(
-  data = local_data,
-  na_strings = "-99",
-  target_columns = "sex"
-)
-
-# replace missing values with NA across all columns
-cleaned_data <- cleanepi::replace_missing_values(
-  data = local_data,
-  na_strings = "-99"
-)
-# saveRDS(
-#   cleaned_data,
-#   file = file.path(dirname(getwd()), "inst", "extdata", "use_na_result.RDS")
-# )
+# show the default missing value strings
+cleanepi::common_na_strings
 ```
 
-## Constant data removal
+```{r}
+local_data <- cleaned_data
+# Replace any default missing value string with NA across all columns
+cleaned_data <- cleanepi::replace_missing_values(
+  data = local_data,
+  target_columns = NULL,
+  na_strings = NULL
+)
+```
+
+### Constant data removal
 
 ```{r}
 local_data <- cleaned_data
@@ -79,22 +67,19 @@ cleaned_data <- cleanepi::remove_constants(
   data = local_data,
   cutoff = 1
 )
-# saveRDS(
-#   cleaned_data,
-#   file = file.path(dirname(getwd()), "inst", "extdata", "constant_dat.RDS")
-# )
 ```
 
-## Date standardisation
+### Date standardisation
 
 ```{r}
 local_data <- cleaned_data
 # STANDARDIZE VALUES IN THE 'date_first_pcr_positive_test' COLUMN
 cleaned_data <- cleanepi::standardize_dates(
   data = local_data,
-  target_columns = "date_first_pcr_positive_test",
+  target_columns = c("date_onset", "date_reporting", "date_admission",
+                     "date_outcome", "date_first_contact", "date_last_contact"),
   format = NULL,
-  timeframe = NULL,
+  timeframe = as.Date(c("2022-12-30", "2023-04-15")),
   error_tolerance = 0.4,
   orders = list(
     world_named_months = c("Ybd", "dby"),
@@ -102,18 +87,9 @@ cleaned_data <- cleanepi::standardize_dates(
     US_formats = c("Omdy", "YOmd")
   )
 )
-
-# detect and standardise all date columns
-cleaned_data <- cleanepi::standardize_dates(
-  data = local_data
-)
-# saveRDS(
-#   cleaned_data,
-#   file = file.path(dirname(getwd()), "inst", "extdata", "date_standardised_dat.RDS")
-# )
 ```
 
-## Check the sequence of date events
+### Check the sequence of date events
 
 ```{r}
 local_data <- cleaned_data
@@ -123,73 +99,150 @@ cleaned_data <- cleanepi::check_date_sequence(
 )
 ```
 
-## Dictionary-based data substituting
+### Calculate timespan {.scrollable}
+
+```{r}
+local_data <- cleaned_data
+# DETECT ROWS WITH INCORRECT DATE SEQUENCE
+cleaned_data <- cleanepi::timespan(
+  data = local_data,
+  target_column = "date_first_contact", 
+  end_date = "date_last_contact",
+  span_column_name = "first_to_last_contact_time",
+  span_unit = "months",
+  span_remainder_unit = "days"
+)
+```
+
+### Convert character columns into numeric 
+
+```{r}
+# CONVERT THE 'case_id' AND 'age' columns into numeric
+local_data <- cleaned_data
+cleaned_data <- cleanepi::convert_to_numeric(
+  data = local_data,
+  target_columns = c("case_id", "age"),
+  lang = "en"
+)
+```
+
+### Dictionary-based data substituting
 
 ```{r}
 # create the data dictionary
+unique_options <- unique(cleaned_data$case_type)
+options <- unique_options[!is.na(unique_options)]
+values = c("suspected", "confirmed", "probable", "confirmed", "confirmed",
+           "probable", "confirmed", "probable", "probable", "probable",
+           "probable", "confirmed", "probable", "confirmed", "confirmed",
+           "suspected", "probable", "confirmed")
 dictionary <- data.frame(
-  options = c("f", "F", "female", "m", "male", "Male"),
-  values = c(rep("female", 3), rep("male", 3)),
-  grp = rep("sex", 6),
-  orders = 1:6
+  options = options,
+  values = values,
+  grp = rep("case_type", length(values)),
+  orders = 1:length(values)
 )
-
-# saveRDS(
-#   dictionary,
-#   file = file.path(dirname(getwd()), "inst", "extdata", "data_dictionary.RDS")
-# )
 
 local_data <- cleaned_data
 cleaned_data <- cleanepi::clean_using_dictionary(
   data = local_data,
   dictionary = dictionary
 )
+
+unique(cleaned_data$case_type)
 ```
 
-## Subject IDs standardisation
+### Other cleanepi functionalities {.scrollable}
+
+* Create simulated data
 
 ```{r}
-local_data <- cleaned_data
-# STANDARDIZE VALUES IN THE 'date_first_pcr_positive_test' COLUMN
-cleaned_data <- cleanepi::check_subject_ids(
-  data = local_data,
-  target_columns = "study_id",
-  prefix = "PS",
-  suffix = "P2",
-  range = c(1, 100),
-  nchar = 7
-)
-saveRDS(
-  cleaned_data,
-  file = file.path(dirname(getwd()), "inst", "extdata", "ids_standardised_dat.RDS")
-)
+set.seed(1)
+test_data <- simulist::sim_linelist() |>
+  simulist::messy_linelist(inconsistent_dates = TRUE)
 ```
 
+* Scan through the data
 
 ```{r}
-local_data <-  readRDS(
-  system.file("extdata", "messy_data.RDS", package = "cleanepi")
-)
-# STANDARDIZE VALUES IN THE 'date_first_pcr_positive_test' COLUMN
-cleaned_data <- cleanepi::standardize_dates(
-  data = local_data,
-  target_columns = "date_first_pcr_positive_test",
-  format = NULL,
-  timeframe = NULL,
-  error_tolerance = 0.4,
-  orders = list(
-    world_named_months = c("Ybd", "dby"),
-    world_digit_months = c("dmy", "Ymd"),
-    US_formats = c("Omdy", "YOmd")
-  )
-)
-
-# detect and standardise all date columns
-cleaned_data <- cleanepi::standardize_dates(
-  data = local_data
-)
-# saveRDS(
-#   cleaned_data,
-#   file = file.path(dirname(getwd()), "inst", "extdata", "date_standardised_dat.RDS")
-# )
+scan_res <- cleanepi::scan_data(test_data)
 ```
+
+* Perform several cleaning operations
+
+```{r}
+cleaned_data <- test_data |>
+  cleanepi::standardize_column_names(
+    keep = "date_admission",
+    rename = c(case_id = "id", gender = "sex")
+  ) |>
+  cleanepi::replace_missing_values(
+    target_columns = NULL,
+    na_strings = NULL
+  ) |>
+  cleanepi::remove_constants(cutoff = 1.0) |>
+  cleanepi::standardize_dates(
+    target_columns = c("date_onset", "date_reporting", "date_admission",
+                     "date_outcome", "date_first_contact", "date_last_contact"),
+    format = NULL,
+    timeframe = as.Date(c("2022-12-30", "2023-04-15")),
+    error_tolerance = 0.4,
+    orders = list(
+      world_named_months = c("Ybd", "dby"),
+      world_digit_months = c("dmy", "Ymd"),
+      US_formats = c("Omdy", "YOmd")
+    )
+  ) |>
+  cleanepi::remove_duplicates(target_columns = NULL) |>
+  cleanepi::convert_to_numeric(
+    target_columns = c("case_id", "age"),
+    lang = "en"
+  ) |>
+  cleanepi::check_subject_ids(
+    target_columns = "case_id",
+    prefix = NULL,
+    suffix = NULL,
+    range = c(1, 100),
+    nchar = NULL
+  ) |>
+  cleanepi::clean_using_dictionary(dictionary = dictionary)
+```
+
+* Add the data scanning result to the report
+
+```{r}
+cleaned_data <- cleanepi::add_to_report(
+   x = cleaned_data,
+   key = "scanning_result",
+   value = scan_res
+)
+```
+
+* Print the report
+
+```{r}
+cleanepi::print_report(
+  data = cleaned_data,
+  report_title = "{cleanepi} data cleaning report",
+  output_file_name = NULL,
+  format = "html",
+  print = TRUE
+)
+```
+
+## Exercises
+
+1. Construct a data dictionary to correct the misspelled options in the `ourcome`
+columns. Hint: use the `add_to_dictionary()` function
+
+2. Get individual date of birth from their age. Hint: use the
+`convert_numeric_to_date()` function
+
+3. Find the duplicated rows across all columns, then across the columns of type
+Date only. Hint: use the `find_duplicates()` and set the value for the
+`target_columns` accordingly.
+
+4. Remove the duplicates found from the above. Hint: use the `remove_duplicates()`
+function
+
+5. Rerun the cleaning operations above using the `clean_data()` function

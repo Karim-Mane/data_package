@@ -4,28 +4,6 @@ author: "Karim"
 format: html
 ---
 
-## Render readme
-
-```{r}
-# pak::pak(c("any::rmarkdown", "any::usethis", "."))
-# writeLines(
-#   knitr::knit_expand(
-#     "README.Rmd",
-#     packagename = read.dcf("DESCRIPTION", "Package"),
-#     gh_repo = usethis:::github_remote_list()$repo_spec
-#   ),
-#   "README_expanded.Rmd"
-# )
-# rmarkdown::render(
-#   "README_expanded.Rmd",
-#   output_file = "README.md",
-#   output_dir = "."
-# )
-# unlink("README_expanded.Rmd")
-```
-
-## Test data creation process
-
 ### create simulated data
 
 ```{r}
@@ -40,7 +18,7 @@ head(local_data)
 # )
 ```
 
-### scanning through the data
+### scan through the data
 
 ```{r}
 # scanning through the data
@@ -51,12 +29,12 @@ print(scan_result)
 ### column names standardisation
 
 ```{r}
-# KEEP 'date.of.admission' AS IS, BUT RENAME 'dateOfBirth' AND 'sex' TO
-# 'DOB' AND 'gender' RESPECTIVELY
+# KEEP 'date_admission' AS IS, BUT RENAME 'id' AND 'sex' TO
+# 'case_id' AND 'gender' RESPECTIVELY
 cleaned_data <- cleanepi::standardize_column_names(
   data = local_data,
-  keep = "date.of.admission",
-  rename = c(DOB = "dateOfBirth", gender = "sex")
+  keep = "date_admission",
+  rename = c(case_id = "id", gender = "sex")
 )
 print(colnames(cleaned_data))
 
@@ -160,6 +138,12 @@ dictionary <- data.frame(
 #   dictionary,
 #   file = file.path(dirname(getwd()), "inst", "extdata", "data_dictionary.RDS")
 # )
+
+local_data <- cleaned_data
+cleaned_data <- cleanepi::clean_using_dictionary(
+  data = local_data,
+  dictionary = dictionary
+)
 ```
 
 ## Subject IDs standardisation

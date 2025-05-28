@@ -19,9 +19,9 @@
 
 [![License:
 MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/license/mit/)
-[![R-CMD-check](https://github.com/Karim-Mane/data_package/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Karim-Mane/data_package/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/Karim-Mane/datapackage/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Karim-Mane/datapackage/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
-coverage](https://codecov.io/gh/Karim-Mane/data_package/branch/main/graph/badge.svg)](https://app.codecov.io/gh/Karim-Mane/data_package?branch=main)
+coverage](https://codecov.io/gh/Karim-Mane/datapackage/branch/main/graph/badge.svg)](https://app.codecov.io/gh/Karim-Mane/datapackage?branch=main)
 [![lifecycle-concept](https://raw.githubusercontent.com/reconverse/reconverse.github.io/master/images/badge-concept.svg)](https://www.reconverse.org/lifecycle.html#concept)
 <!-- badges: end -->
 
@@ -40,7 +40,7 @@ You can install the development version of datapackage from
 
 ``` r
 # install.packages("pak")
-pak::pak("Karim-Mane/data_package")
+pak::pak("Karim-Mane/datapackage")
 ```
 
 ## Example
@@ -59,7 +59,7 @@ package is not ready for use outside of the development team.
 ### Contributions
 
 Contributions are welcome via [pull
-requests](https://github.com/Karim-Mane/data_package/pulls).
+requests](https://github.com/Karim-Mane/datapackage/pulls).
 
 ### Related projects
 

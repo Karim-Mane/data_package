@@ -126,7 +126,7 @@ cleaned_data <- cleanepi::convert_to_numeric(
 )
 ```
 
-### Dictionary-based data substituting
+### Dictionary-based data substitution
 
 ```{r}
 # create the data dictionary

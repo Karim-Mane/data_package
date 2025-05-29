@@ -1,0 +1,30 @@
+.quarto-title-block .quarto-title-banner {
+  background-image: url(./UKRI_MRCG_LSHTM_logo.png);
+  background-size: 300px;
+  background-position: left;
+  background-repeat: no-repeat;
+  padding-left: 10px;
+  background-origin: content-box;
+}
+
+.reveal h1{
+  font-family: "Roboto", sans-serif;
+  color: #2b8cbe;
+  font-size: 2em;
+  font-weight: bold;
+}
+
+.reveal h2{
+  font-family: "Roboto", sans-serif;
+  color: #2b8cbe;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.reveal h3{
+  font-family: "Roboto", sans-serif;
+  color: #2b8cbe;
+  font-size: 1em;
+  font-weight: bold;
+}
+

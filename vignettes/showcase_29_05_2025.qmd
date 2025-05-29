@@ -1,0 +1,626 @@
+---
+title: "TRACEing simulist and cleanepi"
+author: "Karim Mané"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+engine: knitr
+filters:
+- webr
+webr: 
+  # packages: ['kableExtra']
+  autoload-packages: true
+  show-startup-message: false
+title-block-banner: "#27445C"
+format:
+  revealjs:
+    slide-number: true
+    show-slide-number: all
+    logo: Epiverse-Text-Only.png
+    footer: "TRACEing simulist and cleanepi"
+css: styles.css
+---
+
+
+
+## OUTLINE {.scrollable}
+
+<div style="float: right; margin: 0 0 1em 1em; width: 30%;">
+  <img src="./cleanepi.png" style="display: block; margin: 0 auto; width: 100%;">
+</div>
+
+### Data preparation functionalities
+
+  * scan through the data
+  * column names cleaning
+  * replace missing data with NA
+  * constant data removal
+
+### Data standardisation and transformation functionalities
+  
+  * date standardisation
+  * sequence of date events verification
+  * time span
+  * dictionary-based cleaning
+  * conversion to numeric
+  
+### Other functionalities
+
+```{webr-r}
+#| context: setup
+
+# install cleanepi
+install.packages("cleanepi", repos = c("https://epiverse-trace.r-universe.dev", "https://repo.r-wasm.org"))
+
+# install simulist
+install.packages("simulist", repos = c("https://epiverse-trace.r-universe.dev",
+                                          "https://repo.r-wasm.org")
+)
+```
+
+## 1. Get the input data {.scrollable}
+
+```{webr-r}
+#| context: interactive
+#| editor-code-line-numbers: 2-4
+# get simulated data
+set.seed(1)
+test_data <- simulist::sim_linelist() |>
+  simulist::messy_linelist(inconsistent_dates = TRUE)
+
+dim(test_data)
+```
+
+<div style="float: right; margin: 0 0 1em 1em; width: 30%;">
+  <img src="./simulist_logo.svg" style="display: block; margin: 0 auto; width: 50%;">
+</div>
+
+## Input data structure {.scrollable}
+
+```{r}
+#| echo: false
+local_data <- readRDS(
+  system.file("extdata", "messy_data.RDS", package = "datapackage")
+)
+local_data |>
+  kableExtra::kbl() |>
+  kableExtra::kable_paper("striped", font_size = 14, full_width = TRUE) |>
+  kableExtra::scroll_box(height = "400px", width = "100%",
+                         box_css = "border: 1px solid #ddd; padding: 5px;",
+                         extra_css = NULL,
+                         fixed_thead = TRUE)
+```
+
+
+## SCAN THROUGH THE DATA {.scrollable}
+
+```{webr-r}
+#| editor-code-line-numbers: 1-3
+scan_result <- cleanepi::scan_data(
+  data = test_data
+)
+```
+
+* Function name: `scan_data()`
+* Get % numeric, date, character, logical and missing values in all `character`
+columns of the data frame
+* Identify potential columns where cleaning is required
+
+
+
+## DATA SCANNING OUTPUT {.scrollable}
+
+```{r}
+#| echo: false
+scan_result <- readRDS(
+  system.file("extdata", "scan_result.RDS", package = "datapackage")
+)
+
+# detect rows with multiple data types
+df <- scan_result |>
+  dplyr::mutate(highlight = ((numeric > 0) & (date > 0)) |
+           ((numeric > 0) & (character > 0)) |
+           ((numeric > 0) & (logical > 0)) |
+           ((date > 0) & (character > 0)) |
+           ((date > 0) & (logical > 0)) |
+           ((character > 0) & (logical > 0))
+         )
+highlight_rows <- which(df$highlight)
+
+scan_result |>
+  kableExtra::kable() |>
+  kableExtra::kable_paper("striped", font_size = 14, full_width = TRUE) |>
+  kableExtra::scroll_box(height = "200px", width = "100%",
+                         box_css = "border: 1px solid #ddd; padding: 5px;",
+                         extra_css = NULL,
+                         fixed_thead = TRUE) |>
+  kableExtra::row_spec(highlight_rows, bold = TRUE, background = "red", color = "white")
+```
+
+:::: columns
+::: {.column width="50%"}
+`What to consider?`
+
+* Syntax in column names
+* Columns with multiple data types
+
+:::
+
+::: {.column width="50%"}
+`What to do?`
+
+* Check your data dictionary to make a decision
+* Use {cleanepi} functionalities to clean the messy columns 🚀
+
+:::
+::::
+
+## Standardise column names {.scrollable}
+
+```{webr-r}
+#| editor-code-line-numbers: 6-10
+
+# PRINT COLUMN NAMES BEFORE
+print(names(test_data))
+
+# KEEP 'date_admission' AS IS,
+# RENAME 'id' AND 'sex' TO 'case_id' AND 'gender' RESPECTIVELY
+cleaned_data <- cleanepi::standardize_column_names(
+  data = test_data,
+  keep = "date_admission",
+  rename = c(case_id = "id", gender = "sex")
+)
+
+# PRINT COLUMN NAMES AFTER
+print(names(cleaned_data))
+```
+
+* Function name: `standardize_column_names()`
+* Standardise column names on snake-case
+* Offers flexibility to specify a subset of:
+  * focal columns to preserve their original format using the `keep` argument
+  * columns to be renamed using the `rename` argument
+
+
+
+## REPLACE MISSING VALUES WITH NA {.scrollable}
+
+```{webr-r}
+#| editor-code-line-numbers: 2-6
+test_data <- cleaned_data
+cleaned_data <- cleanepi::replace_missing_values(
+  data = test_data,
+  na_strings = NULL,
+  target_columns = NULL
+)
+```
+
+* Use the code below to show the default missing value strings
+
+```{webr-r}
+#| editor-code-line-numbers: 1
+cleanepi::common_na_strings
+```
+
+* Function name: `replace_missing_values()`
+* R functions easily handle `NA`
+* `target_columns` to specify a vector of column names to be considered
+* `na_strings` to specify the strings representing missing values in your data
+
+
+
+## Remove constant data {.scrollable}
+
+```{webr-r}
+#| editor-code-line-numbers: 3-6
+test_data <- cleaned_data
+# REMOVE THE CONSTANT COLUMNS, AND EMPTY ROWS AND COLUMNS
+cleaned_data <- cleanepi::remove_constants(
+  data = test_data,
+  cutoff = 1
+)
+```
+
+* Function name: `remove_constants()`
+* Constant data: `empty rows and columns`, and `constant columns`
+* `Iteratively` remove empty rows and columns as well as constant columns
+* `cutoff`: to define the %constant data above which rows and columns should be
+deleted (varies between **0** and **1**)
+* Delete rows and columns which do not add any variability to the data
+
+::: {.callout-important}
+
+## Area of improvement
+
+It's currently impossible to apply the filtration on only rows or only columns.
+Use `{janitor}` for such filtration.
+
+:::
+
+## Standardise dates {.scrollable}
+
+```{webr-r}
+date_columns <- cleaned_data |>
+  dplyr::select(dplyr::starts_with("date_"))
+```
+
+```{r}
+#| echo: false
+local_data <- readRDS(
+  system.file("extdata", "constant_dat.RDS", package = "datapackage")
+) 
+local_data |>
+  dplyr::select(dplyr::starts_with("date_")) |>
+  dplyr::mutate(date_onset = kableExtra::cell_spec(date_onset, color = "red")) |>
+  dplyr::mutate(date_reporting = kableExtra::cell_spec(date_reporting, color = "red")) |>
+  dplyr::mutate(date_admission = kableExtra::cell_spec(date_admission, color = "red")) |>
+  dplyr::mutate(date_outcome = kableExtra::cell_spec(date_outcome, color = "red")) |>
+  dplyr::mutate(date_first_contact = kableExtra::cell_spec(date_first_contact, color = "red")) |>
+  dplyr::mutate(date_last_contact = kableExtra::cell_spec(date_last_contact, color = "red")) |>
+  kableExtra::kable(format = "html", escape = FALSE) |>
+  kableExtra::kable_paper("striped", font_size = 14, full_width = TRUE) |>
+  kableExtra::scroll_box(height = "400px", width = "100%",
+                         box_css = "border: 1px solid #ddd; padding: 5px;",
+                         extra_css = NULL,
+                         fixed_thead = TRUE)
+```
+
+```{webr-r}
+#| editor-code-line-numbers: 4-15
+test_data <- cleaned_data
+# STANDARDIZE THE SPECIFIED DATE COLUMNS
+# SET TO NA ANY VALUE THAT IS OUTSIDE OF THE SPECIFIED TIMEFRAME
+cleaned_data <- cleanepi::standardize_dates(
+  data = test_data,
+  target_columns = c("date_onset", "date_reporting", "date_admission",
+                     "date_outcome", "date_first_contact", "date_last_contact"),
+  format = NULL,
+  timeframe = as.Date(c("2022-12-30", "2023-04-15")),
+  error_tolerance = 0.4,
+  orders = list(
+    world_named_months = c("Ybd", "dby"),
+    world_digit_months = c("dmy", "Ymd"),
+    US_formats = c("Omdy", "YOmd")
+  )
+)
+```
+
+* Function name: `standardize_dates()`
+* Convert date values into ISO8601 format: `YYYY-mm-dd` suitable for handling
+date values in R
+
+::: {.incremental}
+* `target_columns`: to provide a vector of column to be converted.
+* `format`: to specify the date format in the target columns if known
+* `timeframe`: to define the expected time frame within which the date values
+should fall
+* `error_tolerance`: to define the maximum percentage of `NA` values
+(non date values) that can be allowed in a converted column.
+* `orders`: to provide a list of formats against which the values will be
+matched in columns with multiple date formats 
+
+:::
+
+* Default `orders` list
+
+```{webr-r}
+orders <- list(
+  quarter_partial_dates = c("Y", "Ym", "Yq"),
+  world_digit_months = c("ymd", "ydm", "dmy", "mdy", "myd", "dym", "Ymd", "Ydm",
+                         "dmY", "mdY", "mYd", "dYm"),
+  world_named_months = c("dby", "dyb", "bdy", "byd", "ybd", "ydb", "dbY", "dYb",
+                         "bdY", "bYd", "Ybd", "Ydb"),
+  us_format = c("Omdy", "YOmd")
+)
+```
+
+* To give priority to american-style dates
+
+```{webr-r}
+us_ord <- orders[c(4, 1, 2, 3)]
+```
+
+* To allow for the conversion of values such as "2014_04_05_23:15:43"
+
+```{webr-r}
+orders$ymdhms <- c("Ymdhms", "Ymdhm")
+```
+
+
+
+## Date Standardisation output {.scrollable}
+
+```{r}
+#| echo: false
+local_data <- readRDS(
+  system.file("extdata", "date_standardised_dat.RDS", package = "datapackage")
+)
+local_data |>
+  dplyr::select(dplyr::starts_with("date_")) |>
+  dplyr::mutate(date_onset = kableExtra::cell_spec(date_onset, color = "red")) |>
+  dplyr::mutate(date_reporting = kableExtra::cell_spec(date_reporting, color = "red")) |>
+  dplyr::mutate(date_admission = kableExtra::cell_spec(date_admission, color = "red")) |>
+  dplyr::mutate(date_outcome = kableExtra::cell_spec(date_outcome, color = "red")) |>
+  dplyr::mutate(date_first_contact = kableExtra::cell_spec(date_first_contact, color = "red")) |>
+  dplyr::mutate(date_last_contact = kableExtra::cell_spec(date_last_contact, color = "red")) |>
+  kableExtra::kable(format = "html", escape = FALSE) |>
+  kableExtra::kable_paper("striped", font_size = 14, full_width = TRUE) |>
+  kableExtra::scroll_box(height = "200px", width = "100%",
+                         box_css = "border: 1px solid #ddd; padding: 5px;",
+                         extra_css = NULL,
+                         fixed_thead = TRUE)
+```
+
+::: {.callout-important}
+
+## What to consider?
+
+* *`error_tolerance`*: when the %NA (non-date values) in a character column >
+this threshold, the column will be returned as it is.
+* *`date guesser`*: fails in some occasions
+  * Preferably use *`target_columns`* for better performance
+* Check the report to see the values that:
+  * fall outside of the specified timeframe
+  * comply with more than one specified format
+
+:::
+
+
+## Check the sequence of date events {.scrollable}
+
+```{webr-r}
+#| editor-code-line-numbers: 2-6
+# DETECT ROWS WITH INCORRECT DATE SEQUENCE
+test_data <- cleaned_data
+cleaned_data <- cleanepi::check_date_sequence(
+  data = test_data,
+  target_columns = c("date_first_contact", "date_last_contact")
+)
+```
+
+* Function name: `check_date_sequence()`
+* Spot out the values that do not follow the desired chronological order in the
+specified date columns
+* Target columns should be `stansardised` and `listed in the expected order of`
+`occurrence` that reflects the chronological sequence of events
+
+
+## Calculate timespan {.scrollable}
+
+```{webr-r}
+#| editor-code-line-numbers: 3-10
+# CALCULATE TIME SPAN BETWEEN FIRST AND LAST CONTACT
+test_data <- cleaned_data
+cleaned_data <- cleanepi::timespan(
+  data = test_data,
+  target_column = "date_first_contact", 
+  end_date = "date_last_contact",
+  span_column_name = "first_to_last_contact_time",
+  span_unit = "months",
+  span_remainder_unit = "days"
+)
+```
+
+* Function name: `timespan()`
+* Calculate the time span between two date variables
+* `target_column`: the name of the target column
+* `end_date`: a date column from the input data or a vector of date values or a
+single date value
+* `span_unit`: the unit in which the time span should be expressed
+* `span_column_name`: the name of the column added to the input data
+* `span_remainder_unit`: the unit in which the remainder of the time span
+calculation will be returned
+
+## Timespan calculation output {.scrollable}
+
+```{r}
+#| echo: false
+local_data <- readRDS(
+  system.file("extdata", "time_span_dat.RDS", package = "datapackage")
+)
+local_data |>
+  dplyr::select(date_first_contact, date_last_contact, first_to_last_contact_time, remainder_days) |>
+  dplyr::mutate(first_to_last_contact_time = kableExtra::cell_spec(first_to_last_contact_time, color = "red")) |>
+  dplyr::mutate(remainder_days = kableExtra::cell_spec(remainder_days, color = "red")) |>
+  kableExtra::kable(format = "html", escape = FALSE) |>
+  kableExtra::kable_paper("striped", font_size = 14, full_width = TRUE) |>
+  kableExtra::scroll_box(height = "200px", width = "100%",
+                         box_css = "border: 1px solid #ddd; padding: 5px;",
+                         extra_css = NULL,
+                         fixed_thead = TRUE)
+```
+
+## Convert character columns into numeric {.scrollable}
+
+```{r}
+#| echo: false
+local_data <- readRDS(
+  system.file("extdata", "time_span_dat.RDS", package = "datapackage")
+)
+local_data |>
+  dplyr::select(case_id, age) |>
+  kableExtra::kable(format = "html", escape = FALSE) |>
+  kableExtra::kable_paper("striped", font_size = 14, full_width = TRUE) |>
+  kableExtra::scroll_box(height = "200px", width = "100%",
+                         box_css = "border: 1px solid #ddd; padding: 5px;",
+                         extra_css = NULL,
+                         fixed_thead = TRUE)
+```
+
+```{webr-r}
+#| editor-code-line-numbers: 3-7
+# CONVERT THE 'case_id' AND 'age' columns into numeric
+test_data <- cleaned_data
+cleaned_data <- cleanepi::convert_to_numeric(
+  data = test_data,
+  target_columns = c("case_id", "age"),
+  lang = "en"
+)
+```
+
+* `lang`: the language in which the letters are written. Currently one of `"en"`,
+`"fr"`, or `"es"` for `English`, `French` or `Spanish` respectively
+
+## Conversion to numeric output {.scrollable}
+
+```{r}
+#| echo: false
+local_data <- readRDS(
+  system.file("extdata", "converted_to_numeric_dat.RDS", package = "datapackage")
+)
+local_data |>
+  dplyr::select(case_id, age) |>
+  kableExtra::kable(format = "html", escape = FALSE) |>
+  kableExtra::kable_paper("striped", font_size = 14, full_width = TRUE) |>
+  kableExtra::scroll_box(height = "200px", width = "100%",
+                         box_css = "border: 1px solid #ddd; padding: 5px;",
+                         extra_css = NULL,
+                         fixed_thead = TRUE)
+```
+
+<div style="float: right; margin: 0 0 1em 1em; width: 30%;">
+  <img src="./numberize_logo.svg" style="display: block; margin: 0 auto; width: 50%;">
+</div>
+
+
+## Dictionary-based data substitution {.scrollable}
+
+```{webr-r}
+#| editor-code-line-numbers: 4-5
+# SUBSTITUTE VALUES IN THE `case_type` COLUMN USING THIS DATA DICTIONARY
+test_data <- cleaned_data
+cleaned_data <- cleanepi::clean_using_dictionary(
+  data = test_data,
+  dictionary = data_dictionary
+)
+```
+
+* Function name: `clean_using_dictionary()`
+* Replace the options in a data frame or linelist with their corresponding
+values stored in a data dictionary
+* The structure of the data dictionary should adhere to the standards expected
+by the {matchmaker} package
+
+```{webr-r}
+# DISPLAY UNIQUE VALUES THE 'case_type' COLUMN
+unique_options <- unique(cleaned_data$case_type)
+unique_options
+
+# CREATE THE DATA DICTIONARY
+options <- unique_options[!is.na(unique_options)]
+values = c("suspected", "confirmed", "probable", "confirmed", "confirmed",
+           "probable", "confirmed", "probable", "probable", "probable",
+           "probable", "confirmed", "probable", "confirmed", "confirmed",
+           "suspected", "probable", "confirmed")
+dictionary <- data.frame(
+  options = options,
+  values = values,
+  grp = rep("case_type", length(values)),
+  orders = 1:length(values)
+)
+head(dictionary)
+```
+
+* Perform the substitution
+
+```{webr-r}
+test_data <- cleaned_data
+cleaned_data <- cleanepi::clean_using_dictionary(
+  data = test_data,
+  dictionary = dictionary
+)
+
+# print out the new values in the 'case_type' column
+unique(cleaned_data$case_type)
+```
+
+* We will allow for string matching substitution in the next version
+
+## Other cleanepi functionalities {.scrollable}
+
+* Create simulated data
+
+```{webr-r}
+set.seed(1)
+test_data <- simulist::sim_linelist() |>
+  simulist::messy_linelist(inconsistent_dates = TRUE)
+```
+
+* Scan through the data
+
+```{webr-r}
+scan_res <- cleanepi::scan_data(test_data)
+```
+
+* Perform several cleaning operations
+
+```{webr-r}
+#| editor-code-line-numbers: 23,28-34
+cleaned_data <- test_data |>
+  cleanepi::standardize_column_names(
+    keep = "date_admission",
+    rename = c(case_id = "id", gender = "sex")
+  ) |>
+  cleanepi::replace_missing_values(
+    target_columns = NULL,
+    na_strings = NULL
+  ) |>
+  cleanepi::remove_constants(cutoff = 1.0) |>
+  cleanepi::standardize_dates(
+    target_columns = c("date_onset", "date_reporting", "date_admission",
+                     "date_outcome", "date_first_contact", "date_last_contact"),
+    format = NULL,
+    timeframe = as.Date(c("2022-12-30", "2023-04-15")),
+    error_tolerance = 0.4,
+    orders = list(
+      world_named_months = c("Ybd", "dby"),
+      world_digit_months = c("dmy", "Ymd"),
+      US_formats = c("Omdy", "YOmd")
+    )
+  ) |>
+  cleanepi::remove_duplicates(target_columns = NULL)
+  cleanepi::convert_to_numeric(
+    target_columns = c("case_id", "age"),
+    lang = "en"
+  ) |>
+  cleanepi::check_subject_ids(
+    target_columns = "case_id",
+    prefix = NULL,
+    suffix = NULL,
+    range = c(1, 100),
+    nchar = NULL
+  ) |>
+  cleanepi::clean_using_dictionary(dictionary = dictionary)
+```
+
+* Add the data scanning result to the report
+
+```{webr-r}
+#| editor-code-line-numbers: 1-5
+cleaned_data <- cleanepi::add_to_report(
+   x = cleaned_data,
+   key = "scanning_result",
+   value = scan_res
+)
+```
+
+* Print the report
+
+```{webr-r}
+#| editor-code-line-numbers: 1-7
+cleanepi::print_report(
+  data = cleaned_data,
+  report_title = "{cleanepi} data cleaning report",
+  output_file_name = NULL,
+  format = "html",
+  print = TRUE
+)
+```
+
+## Useful resources
+
+* Epiverse_TRACE github repo: https://github.com/epiverse-trace
+* {cleanepi} documentation: https://epiverse-trace.github.io/cleanepi/
+* raise an issue at https://github.com/epiverse-trace/cleanepi/issues
+
+
+
+
